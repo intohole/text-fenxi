@@ -1,0 +1,8 @@
+data/
+
+#屏蔽日志等信息
+*.log 
+*err
+*.out
+*.txt
+packages/
