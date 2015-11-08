@@ -11,7 +11,7 @@ c =  CountVectorizer()
 t = TfidfTransformer()
 tfidf = TfidfVectorizer()
 vector = []
-for i in range(1, 10):
+for i in range(1, 100):
     with open('data/%s.txt' % i) as f:
         content = []
         is_content = False
@@ -28,8 +28,9 @@ for i in range(1, 10):
             elif is_content is True:
                 content.append(line)
         vector.append(' '.join(content))
-tfidf_vector = tfidf.fit_transform(vector)
+tfidf_vector = tfidf.fit_transform(vector[:-3])
 cluster = KMeans(init = 'k-means++' , n_clusters =  3  )
 cluster_result = cluster.fit(tfidf_vector)
+tfidf_vector_test = tfidf.fit_transform(vector[-3:])
 print cluster_result.labels_
 
