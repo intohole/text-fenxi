@@ -6,3 +6,12 @@ data/
 *.out
 *.txt
 packages/
+texts
+word.freq
+
+
+
+#压缩包
+*.rar
+*.zip
+*.bin
