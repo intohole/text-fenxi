@@ -56,7 +56,7 @@ def entropy( probs ):
         return None
     return sum([ -prob * math.log(prob,2) for prob in probs])
 
-def word_rec(dict_path , word_limit):
+def word_rec(dict_path , word_limit , left_entropy_limit , right_entropy_limit):
     word_freq = collections.defaultdict(int)
     with open(dict_path) as f:
         word_sum = float(f.readline().rstrip().split("\t")[1]) 
@@ -84,7 +84,9 @@ def word_rec(dict_path , word_limit):
                     if len(word_right) >0:
                         right_sum = float(sum(word_left.values()))
                         right_entropy =  entropy([ l/left_sum  for l in word_right.values()])
-                    print last_word,left_entropy,right_entropy 
+                        
+                    if left_entropy > left_entropy_limit and right_entropy > right_entropy_limit: 
+                        print last_word,left_entropy,right_entropy 
             last_word = word 
             word_count = 0
             word_left.clear()
@@ -102,4 +104,4 @@ if __name__ == "__main__":
     if sys.argv[1] == "wordsplit":
         word_split(sys.argv[2])
     elif sys.argv[1] == "wordrec":
-       word_rec(sys.argv[2] , float(sys.argv[3])) 
+       word_rec(sys.argv[2] , float(sys.argv[3]) , float(sys.argv[4]) , float(sys.argv[5])) 
