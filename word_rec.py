@@ -76,11 +76,11 @@ def word_rec(dict_path , word_limit , left_entropy_limit , right_entropy_limit):
             if last_word != "":
                 word_rate = word_count / word_sum 
                 if word_rate / (word_freq[word[0]] /word_sum * word_freq[word[1]]/word_sum) > word_limit:
-                    left_entropy = None 
+                    left_entropy = 99 
                     if len(word_left) >0:
                         left_sum = float(sum(word_left.values()))
                         left_entropy =  entropy([ l/left_sum  for l in word_left.values()])
-                    right_entropy = None 
+                    right_entropy = 99 
                     if len(word_right) >0:
                         right_sum = float(sum(word_left.values()))
                         right_entropy =  entropy([ l/left_sum  for l in word_right.values()])
