@@ -10,40 +10,37 @@ sys.setdefaultencoding("utf-8")
 import collections
 import json
 import math
-
-
+from b2 import file2
 
 
 
 
 def word_split(save_path):
     word_freq = collections.defaultdict(int)
-    for dirpath , dirnames , filenames in os.walk('texts/lrc'):
-        for filename in filenames:
-            with open(os.path.join(dirpath , filename)) as f:
-                for line in f.readlines():
-                    try:
-                        line = line.decode("gbk").encode("utf-8").rstrip().split("]")
-                    except:
-                        continue 
-                    if len(line ) == 1:
-                        continue
-                    words = line[-1].replace("," ," ").replace("。", " ").split()
-                    for word in words:
-                        word = word.decode("utf-8")
-                        # 使用2元文法
-                        if len(word) >1: 
-                            word_freq[word[-1]] += 1 
-                        for i in range(len(word)-1):
-                            cur_word = word[i : i + 2]
-                            word_freq[word[i]] += 1
-                            print "%s\t%s\t%s" % ( cur_word , "word" , 1)
-                            if i != 0: 
-                                # 左邻字
-                                print "%s\t%s\t%s" % (cur_word , "left" ,word[i-1])
-                            if i < (len(word) -2):
-                                # 右邻字
-                                print "%s\t%s\t%s" % (cur_word , "right" ,word[i + 2])
+    lrc = file2.Files(dirpath = 'texts/lrc')
+    for line in lrc:
+        try:
+            line = line.decode("gbk").encode("utf-8").split("]")
+        except Exception ,e :
+            continue
+        if len(line) == 1:
+            continue
+        words = line[-1].replace("," ," ").replace("。" , " ").split()
+        for word in words:
+            word = word.decode("utf-8")
+            # 使用2元文法
+            if len(word) >1: 
+                word_freq[word[-1]] += 1 
+            for i in range(len(word)-1):
+                cur_word = word[i : i + 2]
+                word_freq[word[i]] += 1
+                print "%s\t%s\t%s" % ( cur_word , "word" , 1)
+                if i != 0: 
+                    # 左邻字
+                    print "%s\t%s\t%s" % (cur_word , "left" ,word[i-1])
+                if i < (len(word) -2):
+                    # 右邻字
+                    print "%s\t%s\t%s" % (cur_word , "right" ,word[i + 2])
     with open(save_path,"w") as f:
         f.write("sum\t%s\n"  % sum(word_freq.values()))
         for word,count in word_freq.items():
@@ -76,11 +73,11 @@ def word_rec(dict_path , word_limit , left_entropy_limit , right_entropy_limit):
             if last_word != "":
                 word_rate = word_count / word_sum 
                 if word_rate / (word_freq[word[0]] /word_sum * word_freq[word[1]]/word_sum) > word_limit:
-                    left_entropy = 99 
+                    left_entropy = 1 
                     if len(word_left) >0:
                         left_sum = float(sum(word_left.values()))
                         left_entropy =  entropy([ l/left_sum  for l in word_left.values()])
-                    right_entropy = 99 
+                    right_entropy = 1 
                     if len(word_right) >0:
                         right_sum = float(sum(word_left.values()))
                         right_entropy =  entropy([ l/left_sum  for l in word_right.values()])
