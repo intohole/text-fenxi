@@ -11,13 +11,15 @@ import collections
 import json
 import math
 from b2 import file2
+from optparse import OptionParser
 
 
+def print_msg(msg):
+    sys.stdout.write("%s\n" % msg)
 
-
-def word_split(save_path):
+def word_split(input_file_path  , save_path):
     word_freq = collections.defaultdict(int)
-    lrc = file2.Files(dirpath = 'texts/lrc')
+    lrc = file2.FilesRead(dirpath = input_file_path)
     for line in lrc:
         try:
             line = line.decode("gbk").encode("utf-8").split("]")
@@ -34,13 +36,13 @@ def word_split(save_path):
             for i in range(len(word)-1):
                 cur_word = word[i : i + 2]
                 word_freq[word[i]] += 1
-                print "%s\t%s\t%s" % ( cur_word , "word" , 1)
+                print_msg("%s\t%s\t%s" % ( cur_word , "word" , 1))
                 if i != 0: 
                     # 左邻字
-                    print "%s\t%s\t%s" % (cur_word , "left" ,word[i-1])
+                    print_msg("%s\t%s\t%s" % (cur_word , "left" ,word[i-1]))
                 if i < (len(word) -2):
                     # 右邻字
-                    print "%s\t%s\t%s" % (cur_word , "right" ,word[i + 2])
+                    print_msg("%s\t%s\t%s" % (cur_word , "right" ,word[i + 2]))
     with open(save_path,"w") as f:
         f.write("sum\t%s\n"  % sum(word_freq.values()))
         for word,count in word_freq.items():
@@ -66,7 +68,10 @@ def word_rec(dict_path , word_limit , left_entropy_limit , right_entropy_limit):
     word_left = collections.defaultdict(int) 
     word_right = collections.defaultdict(int)
     for line in sys.stdin:
-        word , sign , value = line.rstrip().split("\t") 
+        line = line.rstrip().split("\t")
+        if len(line) != 3:
+            continue
+        word , sign , value = line 
         word = word.decode("utf-8")
 
         if last_word != word:
@@ -80,8 +85,7 @@ def word_rec(dict_path , word_limit , left_entropy_limit , right_entropy_limit):
                     right_entropy = 1 
                     if len(word_right) >0:
                         right_sum = float(sum(word_left.values()))
-                        right_entropy =  entropy([ l/left_sum  for l in word_right.values()])
-                        
+                        right_entropy =  entropy([ l/right_sum  for l in word_right.values()])
                     if left_entropy > left_entropy_limit and right_entropy > right_entropy_limit: 
                         print last_word,left_entropy,right_entropy 
             last_word = word 
@@ -97,8 +101,34 @@ def word_rec(dict_path , word_limit , left_entropy_limit , right_entropy_limit):
             value = value.decode("utf-8")
             word_right[value] += 1
 
+def main(input_file ,  dict_path = None , word_limit = 100 , left_entropy_limit = 1.0 , right_entropy_limit= 1.0):
+    import subprocess
+    import os 
+    cwd = os.path.abspath(os.path.dirname(__file__))
+    dict_path = os.path.join(cwd , "word.freq") if dict_path is None else dict_path 
+    script_file = os.path.join(cwd , os.path.basename(__file__)) 
+    commands = ["python" , script_file , "-m" , "pre" , "-i" ,input_file , "-d" , dict_path ]
+    read_pipe = subprocess.Popen(commands ,stdout = subprocess.PIPE )
+    sort_pipe = subprocess.Popen("sort" , stdin = read_pipe.stdout , stdout = subprocess.PIPE)
+    sort_pipe.wait()
+    sys.exit(0)
+    commands1 = ["python" , script_file , "-m" , "rec" , "-d" , dict_path , "-w" , str(word_limit) , "-l" , str(left_entropy_limit) ,"-r", str(right_entropy_limit) ]
+    rec_pipe = subprocess.Popen(commands1 , stdin = sort_pipe.stdout )
+    rec_pipe.wait()
+
 if __name__ == "__main__":
-    if sys.argv[1] == "wordsplit":
-        word_split(sys.argv[2])
-    elif sys.argv[1] == "wordrec":
-       word_rec(sys.argv[2] , float(sys.argv[3]) , float(sys.argv[4]) , float(sys.argv[5])) 
+    opts = OptionParser()
+    opts.add_option("-m" , "--method" , help = "选择文件方法选项" , dest = "method" , default = "main")
+    opts.add_option("-i" , "--input" , help = "需要新词识别的文档路径" , dest = "input" , default = "" )
+    opts.add_option("-d" , "--dict" , help = "词典文件（单字频率信息）保存路径" , dest = "dict"  , default = None )
+    opts.add_option("-w" , "--word-limit" , help = "出现最小词频" , dest = "word_limit" , default = 100)
+    opts.add_option("-l", "--left-entropy-limit" , help = "新词最小左熵限制" , dest = "left_entropy_limit" , default = 1.0 )
+    opts.add_option("-r", "--right-entropy-limit" , help = "新词最小右熵限制" , dest = "right_entropy_limit" , default = 1.0) 
+    (config , args) = opts.parse_args(sys.argv)
+    print config
+    if config.method == "main":
+        main(config.input , config.dict , config.word_limit , config.left_entropy_limit , config.right_entropy_limit)
+    elif config.method == "pre":
+        word_split(config.input , config.dict)
+    elif config.method == "rec":
+        word_rec(config.dict , config.word_limit , config.left_entropy_limit , config.right_entropy_limit) 
